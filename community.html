@@ -1,47 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Community Highlights — XAYTHEON</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css?v=1.0.0" />
-   <script defer src="theme.js?v=1.0.0"></script>
-  <!-- Supabase SDK & Auth (for navbar/gating if needed) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.4/dist/umd/supabase.min.js"></script>
-  <script defer src="auth.js?v=1.0.0"></script>
-  <script defer src="i18n.js?v=1.0.0"></script>
-   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
 </head>
-
 <body class="eightgon-page">
-
-<button id="scrollTopBtn" aria-label="Scroll to top">
-  ↑
-</button>
-
   <div class="content">
-    <div id="header-placeholder"></div>
 
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+      <div class="nav-container">
+        <a class="logo" href="index.html" aria-label="Back to Home">
+          <img class="logo-img" src="assets/logo/thelogo.png" alt="XAYTHEON logo" />
+        </a>
+        <ul class="nav-menu">
+          <li><a class="nav-link" href="index.html">Home</a></li>
+          <li><a class="nav-link" href="github.html">GitHub Dashboard</a></li>
+          <li><a class="nav-link" href="explore.html">Explore by Topic</a></li>
+          <li><a class="nav-link" href="contributions.html">Contributions</a></li>
+        </ul>
+      </div>
+    </nav>
 
-    <main>
-  <section class="github-section">
-    <div class="container">
-      <h2 class="section-title" style="font-family:'Eightgon',sans-serif;" data-i18n="community.title">
-        Community Highlights
-      </h2>
+    <!-- Community Section -->
+    <section class="github-section">
+      <div class="container">
+        <h2 class="section-title">Community Highlights</h2>
 
-      <!-- Trending Repos Card -->
-      <div class="card trending-card">
-        <div class="card-header">
-          <h3 data-i18n="community.trending">Trending Now</h3>
-        </div>
-        <div class="card-body">
-          <!-- Form -->
-          <form id="trend-form" class="github-form" autocomplete="off">
-            <div class="form-grid">
-              <div class="field-group">
+        <div class="card">
+          <div class="card-header">
+            <h3>Trending Repositories</h3>
+          </div>
+          <div class="card-body">
+
+            <!-- Filter form -->
+            <form id="trend-form" class="github-form" autocomplete="off">
+              <div class="field-group" style="grid-column: span 3;">
                 <label for="trend-lang">Language</label>
                 <select id="trend-lang">
                   <option value="">Any</option>
@@ -55,48 +52,52 @@
                   <option>C++</option>
                 </select>
               </div>
-              <div class="field-group">
+              <div class="field-group" style="grid-column: span 3;">
                 <label for="trend-topic">Topic</label>
                 <input id="trend-topic" type="text" placeholder="e.g. threejs, vite" />
               </div>
-              <div class="field-group">
+              <div class="field-group" style="grid-column: span 3;">
                 <label for="trend-window">Time Window</label>
                 <select id="trend-window">
-                  <option value="30">Last 30 days</option>
                   <option value="7">Last 7 days</option>
+                  <option value="30" selected>Last 30 days</option>
                   <option value="90">Last 90 days</option>
                 </select>
               </div>
-              <div class="field-group">
-                <label for="trend-k">Top K</label>
-                <input id="trend-k" type="number" placeholder="e.g. 10" />
+              <div class="field-group" style="grid-column: span 2;">
+                <label for="trend-k">Show Top</label>
+                <input id="trend-k" type="number" value="10" min="1" max="20" />
               </div>
-            </div>
-            <div class="form-buttons">
-              <button class="btn btn-primary" type="submit" data-i18n="common.submit">Update</button>
-              <button class="btn btn-outline" type="button" id="trend-reset" data-i18n="common.tryAgain">Reset</button>
-            </div>
-            <div id="trend-status" class="github-status" aria-live="polite"></div>
-            <div id="trend-cache-info" class="github-status" aria-live="polite"></div>
-          </form>
+              <button class="btn btn-primary" type="submit" style="grid-column: span 2;">Update</button>
+              <button class="btn btn-outline" type="button" id="trend-reset">Reset</button>
+              <div id="trend-status" class="github-status" aria-live="polite" style="grid-column: 1 / -1;"></div>
+            </form>
 
-          <!-- Results -->
-          <div id="trend-results" class="repo-list">
-            <!-- Repo cards will be injected here -->
-            <p class="placeholder-text">No trending repos yet. Use the form above to search.</p>
+            <!-- Results appear here -->
+            <div id="trend-results" class="repo-list" style="margin-top: 20px;"></div>
+
           </div>
         </div>
       </div>
-    </div>
-  </section>
-</main>
+    </section>
 
-  <div id="footer-placeholder"></div>
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-brand">
+            <span class="logo-text">XAYTHEON</span>
+            <p>Empowering the next generation of innovators</p>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; 2025 XAYTHEON. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+
   </div>
 
-  <script src="community.js?v=1.0.0"></script>
-  <script src="boilerplate/boilerplate-loader.js?v=1.0.0"></script>
-    
+  <script src="community.js"></script>
 </body>
-
 </html>

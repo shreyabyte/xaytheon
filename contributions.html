@@ -1,142 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Contributions — XAYTHEON</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  
-  <link rel="stylesheet" href="style.css?v=1.0.0">
-  <script src="theme.js?v=1.0.0"></script>
-  <!-- Supabase SDK & Auth -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.4/dist/umd/supabase.min.js"></script>
-  <script defer src="auth.js?v=1.0.0"></script>
-  <script defer src="i18n.js?v=1.0.0"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
 </head>
-
 <body class="eightgon-page">
   <div class="content">
-    <div id="header-placeholder"></div>
 
-    <main>
-      <section class="github-section">
-        <div class="container">
-          <h2 class="section-title" style="font-family:'Eightgon',sans-serif;" data-i18n="nav.contributions">
-            Contributions
-          </h2>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+      <div class="nav-container">
+        <a class="logo" href="index.html" aria-label="Back to Home">
+          <img class="logo-img" src="assets/logo/thelogo.png" alt="XAYTHEON logo" />
+        </a>
+        <ul class="nav-menu">
+          <li><a class="nav-link" href="index.html">Home</a></li>
+          <li><a class="nav-link" href="github.html">GitHub Dashboard</a></li>
+          <li><a class="nav-link" href="community.html">Community Highlights</a></li>
+          <li><a class="nav-link" href="explore.html">Explore by Topic</a></li>
+        </ul>
+      </div>
+    </nav>
 
-          <!-- Guest View -->
-          <div data-requires-guest>
-            <!-- Profile Header (Not Signed In) -->
-            <div class="profile-header" style="margin: 30px 0; display: flex; align-items: center; gap: 16px;">
-              <img src="assets/avatar-default.png" alt="User Avatar" class="profile-avatar"
-                style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-color);" />
-              <div>
-                <h3 style="margin: 0 0 8px 0; font-size: 1.4rem;">Your Profile</h3>
-                <p class="muted" style="margin: 0;">Track and showcase your open source journey</p>
-              </div>
-            </div>
+    <!-- Contributions Section -->
+    <section class="github-section">
+      <div class="container">
+        <h2 class="section-title">Your Open Source Contributions</h2>
 
-            <!-- Call to Action -->
-            <div class="card" style="margin-top: 20px; text-align: center; padding: 40px 20px;">
-              <div class="card-body">
-                <h3 style="margin-bottom: 16px; font-size: 1.3rem;">Start Your Contribution Journey</h3>
-                <p class="muted" style="margin-bottom: 24px; font-size: 1rem;">
-                  Sign in to add your contributions, track your progress, and build your open source portfolio.
-                </p>
-                <a href="login.html" class="btn btn-primary" style="padding: 12px 32px; font-size: 1rem;">
-                  Sign In to Get Started
-                </a>
-              </div>
-            </div>
+        <div class="card" style="grid-column: 1 / -1;">
+          <div class="card-header">
+            <h3>Add a Contribution</h3>
           </div>
+          <div class="card-body">
 
-          <!-- Authenticated User View -->
-          <section id="user-contrib" data-requires-auth style="display:none; margin-top: 20px;">
-            <!-- Profile Header (Signed In) -->
-            <div class="profile-header" style="margin: 20px 0 30px 0; display: flex; align-items: center; gap: 16px;">
-              <img src="assets/avatar-default.png" alt="User Avatar" class="profile-avatar"
-                style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-color);" />
-              <div>
-                <h3 style="margin: 0 0 8px 0; font-size: 1.4rem;">Welcome Back!</h3>
-                <p class="muted" style="margin: 0;">Manage and showcase your open source contributions</p>
+            <!-- Form to add a new contribution -->
+            <form id="contrib-form" class="github-form" autocomplete="off" style="margin-bottom: 20px;">
+              <div class="field-group" style="grid-column: span 4;">
+                <label for="cf-project">Project Name</label>
+                <input id="cf-project" type="text" placeholder="e.g. Chat-Real" required />
               </div>
-            </div>
-
-            <div class="card" style="grid-column: 1 / -1;">
-              <div class="card-header">
-                <h3>Add New Contribution</h3>
+              <div class="field-group" style="grid-column: span 4;">
+                <label for="cf-link">Repository / PR Link</label>
+                <input id="cf-link" type="url" placeholder="https://github.com/owner/repo" />
               </div>
-              <div class="card-body">
-                <form id="contrib-form" class="github-form" autocomplete="off" style="margin-bottom: 20px;">
-                  <div class="field-group" style="grid-column: span 4;">
-                    <label>Project Name</label>
-                    <input id="cf-project" type="text" placeholder="e.g. Chat-Real" required />
-                  </div>
-                  <div class="field-group" style="grid-column: span 4;">
-                    <label>Repository / PR Link</label>
-                    <input id="cf-link" type="url" placeholder="https://github.com/owner/repo or PR URL" required />
-                  </div>
-                  <div class="field-group" style="grid-column: span 4;">
-                    <label>Event / Program</label>
-                    <input id="cf-program" type="text" placeholder="Hacktoberfest, GSSoC, SWOC..." />
-                  </div>
-                  <div class="field-group" style="grid-column: span 6;">
-                    <label>Date</label>
-                    <input id="cf-date" type="date" />
-                  </div>
-                  <div class="field-group" style="grid-column: span 6;">
-                    <label>Contribution Type</label>
-                    <input id="cf-type" type="text" placeholder="Bug fix, Documentation, Feature, Design..." />
-                  </div>
-                  <div class="field-group" style="grid-column: span 12;">
-                    <label>Description</label>
-                    <input id="cf-desc" type="text" placeholder="Briefly describe your contribution" />
-                  </div>
-                  <div class="field-group" style="grid-column: span 8;">
-                    <label>Tech Stack</label>
-                    <input id="cf-tech" type="text" placeholder="React, Node.js, Python, MongoDB..." />
-                  </div>
-                  <div class="field-group" style="grid-column: span 4;">
-                    <label>Screenshot (Optional)</label>
-                    <input id="cf-shot" type="file" accept="image/*" />
-                  </div>
-                  <button class="btn btn-primary" type="submit" style="grid-column: span 3;">
-                    Add Contribution
-                  </button>
-                  <div id="contrib-status" class="github-status" style="grid-column: 1 / -1;"></div>
-                </form>
-
-                <hr style="margin: 30px 0; opacity: 0.2;" />
-
-                <h3 style="margin-bottom: 20px;">Your Contributions</h3>
-                <div id="contrib-list" class="repo-list"></div>
+              <div class="field-group" style="grid-column: span 4;">
+                <label for="cf-program">Event / Program</label>
+                <input id="cf-program" type="text" placeholder="Hacktoberfest, GSSoC, ..." />
               </div>
-            </div>
-          </section>
+              <div class="field-group" style="grid-column: span 6;">
+                <label for="cf-date">Date</label>
+                <input id="cf-date" type="date" />
+              </div>
+              <div class="field-group" style="grid-column: span 6;">
+                <label for="cf-type">Type</label>
+                <input id="cf-type" type="text" placeholder="Bug fix, Docs, Feature, Design" />
+              </div>
+              <div class="field-group" style="grid-column: span 12;">
+                <label for="cf-desc">Description</label>
+                <input id="cf-desc" type="text" placeholder="What did you contribute?" />
+              </div>
+              <div class="field-group" style="grid-column: span 12;">
+                <label for="cf-tech">Tech Stack</label>
+                <input id="cf-tech" type="text" placeholder="React, Node, Python..." />
+              </div>
+              <button class="btn btn-primary" type="submit" style="grid-column: span 3;">
+                Save Contribution
+              </button>
+              <div id="contrib-status" class="github-status" style="grid-column: 1 / -1;"></div>
+            </form>
+
+            <!-- List of saved contributions appears below the form -->
+            <div id="contrib-list" class="repo-list"></div>
+
+          </div>
         </div>
-      </section>
-    </main>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-brand">
+            <span class="logo-text">XAYTHEON</span>
+            <p>Empowering the next generation of innovators</p>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; 2025 XAYTHEON. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+
   </div>
 
-  <!-- Footer OUTSIDE content div -->
-  <div id="footer-placeholder"></div>
-
-  <div class="cursor-container">
-    <span class="cursor-dot"></span>
-    <span class="cursor-dot"></span>
-    <span class="cursor-dot"></span>
-    <span class="cursor-dot"></span>
-    <span class="cursor-dot"></span>
-    <span class="cursor-dot"></span>
-    <span class="cursor-dot"></span>
-    <span class="cursor-dot"></span>
-  </div>
-
-  <script src="contributions.js?v=1.0.0"></script>
-  <script src="boilerplate/boilerplate-loader.js?v=1.0.0"></script>
+  <script src="contributions.js"></script>
 </body>
-
 </html>

@@ -1,345 +1,137 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
-
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#000000" />
   <title>GitHub Dashboard — XAYTHEON</title>
-
-  <!-- Fonts & Icons -->
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Press+Start+2P&display=swap"
-    rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=1.0.0" />
-  <link rel="stylesheet" href="github.css?v=1.0.0" />
-  <link rel="stylesheet" href="github-suggestions.css?v=1.0.0" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="assets/icons/icon-192x192.png" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <script src="theme.js?v=1.0.0"></script>
-
-
-  <!-- Supabase SDK & Chart.js -->
-  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.4/dist/umd/supabase.min.js"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-
-  <!-- Three.js -->
-  <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-
-  <!-- Custom Scripts -->
-  <script defer src="auth.js?v=1.0.0"></script>
-  <script defer src="i18n.js?v=1.0.0"></script>
-  <script defer src="github.js?v=1.0.0"></script>
-  <script defer src="contributions.js?v=1.0.0"></script>
-  <script defer src="boilerplate/boilerplate-loader.js?v=1.0.0"></script>
+  <link rel="stylesheet" href="style.css" />
 </head>
-
 <body class="eightgon-page">
-  <div class="page-wrapper">
+  <div class="content">
 
-    <div id="header-placeholder"></div>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+      <div class="nav-container">
+        <a class="logo" href="index.html" aria-label="Back to Home">
+          <img class="logo-img" src="assets/logo/thelogo.png" alt="XAYTHEON logo" />
+        </a>
+        <ul class="nav-menu">
+          <li><a class="nav-link" href="index.html">Home</a></li>
+          <li><a class="nav-link" href="community.html">Community Highlights</a></li>
+          <li><a class="nav-link" href="explore.html">Explore by Topic</a></li>
+          <li><a class="nav-link" href="contributions.html">Contributions</a></li>
+        </ul>
+      </div>
+    </nav>
 
-    <main class="github-main">
-      <div class="github-container">
+    <!-- GitHub Dashboard Section -->
+    <section id="github" class="github-section">
+      <div class="container">
 
-        <!-- HERO -->
-        <section class="hero-section">
-          <h1 class="hero-title">Personal GitHub Analytics</h1>
-          <p class="hero-subtitle">Comprehensive insights into your GitHub presence and activity patterns</p>
-        </section>
+        <!-- Header: title + mini 3D model -->
+        <div class="github-header">
+          <h2 class="section-title">GitHub Dashboard</h2>
+          <div class="mini-3d" aria-hidden="true">
+            <canvas id="mini-3d-canvas"></canvas>
+            <div class="mini-3d-loading">Loading…</div>
+          </div>
+        </div>
 
-        <!-- SEARCH -->
-        <section class="search-card">
-          <form id="github-form" class="search-form" autocomplete="off">
-            <div class="search-wrapper">
-              <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24">
-                <circle cx="11" cy="11" r="8"></circle>
-                <path d="m21 21-4.35-4.35"></path>
-              </svg>
-              <input type="text" id="gh-username" class="search-input"
-                placeholder="Enter GitHub username (e.g., octocat)" />
-              <label for="gh-username" class="sr-only">GitHub Username</label>
+        <!-- Search form: enter a GitHub username -->
+        <form id="github-form" class="github-form" autocomplete="off">
+          <div class="field-group" style="grid-column: span 6;">
+            <label for="gh-username">GitHub Username</label>
+            <input id="gh-username" name="username" type="text" placeholder="e.g. octocat" required />
+          </div>
+          <button class="btn btn-primary" type="submit">Load Dashboard</button>
+          <button class="btn btn-outline" type="button" id="gh-clear">Clear</button>
+          <!-- Status message shown while loading or on error -->
+          <div id="github-status" class="github-status" aria-live="polite"></div>
+        </form>
 
-            </div>
-            <div class="search-actions">
-              <button type="submit" class="btn-search">
-                <button type="submit" class="btn-search" aria-label="Analyze GitHub profile">
+        <!-- Dashboard cards grid -->
+        <div class="github-grid">
 
-                  <span>Analyze Profile</span>
-                  <svg width="16" height="16" viewBox="0 0 24 24">
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                    <polyline points="12 5 19 12 12 19"></polyline>
-                  </svg>
-                </button>
-                <button type="button" id="clear-btn" class="btn-clear">Clear</button>
-            </div>
-          </form>
-          <div id="status-message" class="status-message"></div>
-        </section>
-
-        <!-- DASHBOARD -->
-        <div id="dashboard" class="dashboard-hidden">
-
-          <!-- Profile Overview -->
-          <section class="dashboard-section">
-            <div class="section-header">
-              <h2 class="section-title">Profile Overview</h2>
-              <div class="section-line"></div>
-            </div>
-
-            <div class="profile-grid">
-
-              <!-- Profile Card -->
-              <div class="profile-main-card">
-                <div class="profile-banner"></div>
-                <div class="profile-content">
-                  <div class="profile-avatar-wrapper">
-                    <img id="profile-avatar" src="" alt="Avatar" class="profile-avatar">
-                    <div class="avatar-ring"></div>
-                  </div>
-                  <div class="profile-info">
-                    <h3 id="profile-name" class="profile-name">—</h3>
-                    <p id="profile-username" class="profile-username">@username</p>
-                    <p id="profile-bio" class="profile-bio"></p>
-                    <div class="profile-meta">
-                      <div class="meta-item">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                          stroke-width="2">
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                          <circle cx="12" cy="7" r="4" />
-                        </svg>
-                        <span id="profile-company">—</span>
-                      </div>
-                      <div class="meta-item">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                          stroke-width="2">
-                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                          <circle cx="12" cy="10" r="3" />
-                        </svg>
-                        <span id="profile-location">—</span>
-                      </div>
-                    </div>
-                  </div>
+          <!-- Profile card: avatar, name, bio, follower counts -->
+          <div class="card profile-card" id="gh-profile">
+            <div class="card-header"><h3>Profile</h3></div>
+            <div class="card-body">
+              <div class="profile-row">
+                <img id="gh-avatar" alt="Avatar" class="avatar" />
+                <div>
+                  <div class="profile-name" id="gh-name">—</div>
+                  <div class="profile-login" id="gh-login">—</div>
+                  <div class="profile-bio" id="gh-bio"></div>
                 </div>
               </div>
-
-              <!-- Social Metrics -->
-              <div class="social-metrics-card">
-                <h4 class="card-subtitle">Social Network</h4>
-                <div class="social-stats">
-                  <div class="social-stat">
-                    <div class="stat-icon followers-icon">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                        <circle cx="9" cy="7" r="4" />
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                      </svg>
-                    </div>
-                    <div class="stat-content">
-                      <div id="followers-count" class="stat-number">0</div>
-                      <div class="stat-label">Followers</div>
-                    </div>
-                  </div>
-                  <div class="social-stat">
-                    <div class="stat-icon following-icon">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                        <circle cx="9" cy="7" r="4" />
-                        <line x1="19" y1="8" x2="19" y2="14" />
-                        <line x1="22" y1="11" x2="16" y2="11" />
-                      </svg>
-                    </div>
-                    <div class="stat-content">
-                      <div id="following-count" class="stat-number">0</div>
-                      <div class="stat-label">Following</div>
-                    </div>
-                  </div>
-                </div>
-                <div class="network-ratio">
-                  <div class="ratio-label">Network Ratio</div>
-                  <div class="ratio-bar">
-                    <div id="ratio-fill" class="ratio-fill"></div>
-                  </div>
-                  <div id="ratio-text" class="ratio-text">—</div>
-                </div>
-              </div>
-
-            </div>
-          </section>
-
-          <!-- Repository Statistics -->
-          <section class="dashboard-section">
-            <div class="section-header">
-              <h2 class="section-title">Repository Statistics</h2>
-              <div class="section-line"></div>
-            </div>
-
-            <div class="repo-stats-grid">
-              <div class="stat-card public-repos">
-                <div class="stat-card-header">
-                  <div class="stat-icon-wrapper public">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                    </svg>
-                  </div>
-                  <span class="stat-card-label">Public Repositories</span>
-                </div>
-                <div id="public-repos" class="stat-card-value">0</div>
-                <div class="stat-card-footer">Total public repos</div>
-              </div>
-
-              <div class="stat-card total-stars">
-                <div class="stat-card-header">
-                  <div class="stat-icon-wrapper stars">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <polygon
-                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                    </svg>
-                  </div>
-                  <span class="stat-card-label">Total Stars</span>
-                </div>
-                <div id="total-stars" class="stat-card-value">0</div>
-                <div class="stat-card-footer">Stars earned</div>
-              </div>
-
-              <div class="stat-card total-forks">
-                <div class="stat-card-header">
-                  <div class="stat-icon-wrapper forks">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="18" r="3" />
-                      <circle cx="6" cy="6" r="3" />
-                      <circle cx="18" cy="6" r="3" />
-                      <path d="M18 9v1a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9" />
-                      <path d="M12 12v3" />
-                    </svg>
-                  </div>
-                  <span class="stat-card-label">Total Forks</span>
-                </div>
-                <div id="total-forks" class="stat-card-value">0</div>
-                <div class="stat-card-footer">Times forked</div>
-              </div>
-
-              <div class="stat-card total-size">
-                <div class="stat-card-header">
-                  <div class="stat-icon-wrapper size">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path
-                        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                      <line x1="12" y1="22.08" x2="12" y2="12" />
-                    </svg>
-                  </div>
-                  <span class="stat-card-label">Total Size</span>
-                </div>
-                <div id="total-size" class="stat-card-value">0 MB</div>
-                <div class="stat-card-footer">Repository size</div>
+              <div class="profile-stats">
+                <div><span id="gh-followers">0</span><label>Followers</label></div>
+                <div><span id="gh-following">0</span><label>Following</label></div>
+                <div><span id="gh-repos-count">0</span><label>Repos</label></div>
               </div>
             </div>
-          </section>
+          </div>
 
-          <!-- Contribution & Activity -->
-          <section class="dashboard-section">
-            <div class="section-header">
-              <h2 class="section-title">Contribution Activity</h2>
-              <div class="section-line"></div>
+          <!-- Contributions chart card -->
+          <div class="card contributions-card" id="gh-contributions">
+            <div class="card-header"><h3>Contributions</h3></div>
+            <div class="card-body">
+              <div id="gh-contrib-note" class="muted">Enter a username and press Load Dashboard.</div>
+              <div id="gh-contrib-svg" class="contrib-svg" role="img" aria-label="Contributions calendar"></div>
             </div>
+          </div>
 
-            <div class="activity-overview-grid">
-              <div class="activity-stat-card">
-                <div class="activity-icon streak"></div>
-                <div class="activity-value" id="current-streak">0</div>
-                <div class="activity-label">Current Streak</div>
-              </div>
-              <div class="activity-stat-card">
-                <div class="activity-icon longest"></div>
-                <div class="activity-value" id="longest-streak">0</div>
-                <div class="activity-label">Longest Streak</div>
-              </div>
-              <div class="activity-stat-card">
-                <div class="activity-icon total"></div>
-                <div class="activity-value" id="total-contributions">0</div>
-                <div class="activity-label">Total Contributions</div>
-              </div>
-              <div class="activity-stat-card">
-                <div class="activity-icon avg"></div>
-                <div class="activity-value" id="avg-daily">0.0</div>
-                <div class="activity-label">Avg Per Day</div>
-              </div>
+          <!-- Top repositories card -->
+          <div class="card repos-card" id="gh-repos">
+            <div class="card-header">
+              <h3>Top Repositories</h3>
+              <div class="muted small">Sorted by stars</div>
             </div>
+            <div class="card-body">
+              <div id="gh-repo-list" class="repo-list"></div>
+            </div>
+          </div>
 
-            <div class="contribution-heatmap-card">
-              <div class="heatmap-header">
-                <h4 class="card-title">Contribution Activity</h4>
-              </div>
-              <div class="heatmap-container">
-                <div id="contribution-heatmap" class="contribution-grid"></div>
-              </div>
+          <!-- Recent activity card -->
+          <div class="card activity-card" id="gh-activity">
+            <div class="card-header">
+              <h3>Recent Activity</h3>
+              <div class="muted small">Public events</div>
             </div>
-
-            <div class="activity-patterns-card">
-              <h4 class="card-title">Activity Patterns</h4>
-              <div class="chart-container">
-                <canvas id="activity-chart" class="activity-chart"></canvas>
-              </div>
+            <div class="card-body">
+              <ul id="gh-activity-list" class="activity-list"></ul>
             </div>
-            <div class="heatmap-legend">
-              <span>Less</span>
-              <div class="legend-box level-0"></div>
-              <div class="legend-box level-1"></div>
-              <div class="legend-box level-2"></div>
-              <div class="legend-box level-3"></div>
-              <div class="legend-box level-4"></div>
-              <span>More</span>
-            </div>
-
-          </section>
-          <!-- Language Insights -->
-          <section class="dashboard-section">
-            <div class="section-header">
-              <h2 class="section-title">Language Insights</h2>
-              <div class="section-line"></div>
-            </div>
-
-            <div class="language-insights-card">
-              <p id="primary-lang-insight" class="insight-text"></p>
-              <div id="language-chart" class="language-chart"></div>
-            </div>
-          </section>
-
-          <!-- Top Repositories -->
-          <section class="dashboard-section">
-            <div class="section-header">
-              <h2 class="section-title">Top Repositories</h2>
-              <div class="section-line"></div>
-            </div>
-            <div id="top-repos-list" class="repos-list"></div>
-          </section>
-
-          <!-- Suggested Repositories -->
-          <section id="suggested-repos-container" class="dashboard-section" style="display:none;">
-            <div class="section-header">
-              <h2 class="section-title">Recommended Projects</h2>
-              <div class="section-line"></div>
-            </div>
-            <div id="suggested-repos-list" class="repos-list"></div>
-          </section>
-
+          </div>
 
         </div>
       </div>
-    </main>
+    </section>
 
-    <div id="footer-placeholder"></div>
-
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-brand">
+            <span class="logo-text">XAYTHEON</span>
+            <p>Empowering the next generation of innovators</p>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; 2025 XAYTHEON. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
 
   </div>
- 
-</body>
 
+  <!-- Three.js libraries (for the mini 3D viewer in the corner) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <!-- contributions.js: needed for the contributions form on other pages -->
+  <script src="contributions.js"></script>
+  <!-- script.js: contains the GitHub Dashboard + mini 3D viewer logic -->
+  <script src="script.js"></script>
+
+</body>
 </html>

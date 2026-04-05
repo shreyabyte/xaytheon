@@ -1,520 +1,185 @@
-(function () {
-  // Define API URL once
-  const API_BASE_URL = "http://127.0.0.1:5000/api/auth";
+// ============================================================
+// auth.js - Handles user login and logout
+//
+// Uses Supabase - a backend service that manages user accounts.
+// This script runs on every page and updates the navbar to show
+// either a "Sign in" button or the user's avatar.
+// ============================================================
 
-  const REQUEST_TIMEOUT = 30000;
+// --- Your Supabase project settings ---
+// These are public values (the "anon" key has limited permissions - it's safe here)
+var SUPABASE_URL = 'https://gqwohbqudbxahlssuohr.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdxd29oYnF1ZGJ4YWhsc3N1b2hyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MDM0OTgsImV4cCI6MjA3NjA3OTQ5OH0.KLkjEHdMM5xUpO-bLRhLGYF_x6XShzjso4Evwlxza2I';
 
-  function isValidEmail(email) {
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    return emailRegex.test(email);
+// This variable will hold our Supabase connection.
+// We set it up inside the DOMContentLoaded listener below.
+var sb = null;
 
-  function enforceHttps() {
-    if (window.location.protocol !== 'https:' &&
-      window.location.hostname !== 'localhost' &&
-      window.location.hostname !== '127.0.0.1') {
-      // Allow file protocol for local testing
-      if (window.location.protocol === 'file:') return;
-      window.location.href = 'https:' + window.location.href.substring(window.location.protocol.length);
-    }
-  }
 
-  async function fetchWithTimeout(url, options = {}, timeout = REQUEST_TIMEOUT) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
-    try {
-      const response = await fetch(resource, {
-        ...options,
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-      return response;
-    } catch (err) {
-      clearTimeout(timeoutId);
-      if (err.name === "AbortError") {
-        throw { code: "TIMEOUT" };
-      }
-      throw err;
-    }
-  }
+// ============================================================
+// HELPER FUNCTIONS
+// ============================================================
 
-  let accessToken = null;
-  let currentUser = null;
-  let tokenExpiryTime = null;
-  let refreshTimer = null;
-  let lastAuthError = null;
+// Shortcut: get an HTML element by its id
+function getEl(id) {
+  return document.getElementById(id);
+}
 
-  function isTokenExpired() {
-    if (!tokenExpiryTime) return true;
-    return Date.now() >= tokenExpiryTime;
-  }
+// Get the first letter of the email to show in the avatar circle
+// e.g. "alice@example.com" -> "A"
+function getInitial(email) {
+  if (!email) return '?';
+  return email.charAt(0).toUpperCase();
+}
 
-  function setAccessToken(token, expiresIn, user) {
-    accessToken = token;
-    currentUser = user || null;
-    tokenExpiryTime = Date.now() + (expiresIn * 1000);
-    scheduleTokenRefresh();
 
-    window.dispatchEvent(
-      new CustomEvent("xaytheon:authchange", { detail: { user: currentUser } })
-    );
-  }
+// ============================================================
+// AUTH FUNCTIONS
+// ============================================================
 
-  function getSession() {
-    return {
-      access_token: accessToken,
-      user: currentUser
-    };
-  }
+// Get the currently logged-in user from Supabase.
+// Returns the user object, or null if nobody is logged in.
+// "async" means this function contacts the server and waits for a reply.
+async function getCurrentUser() {
+  var result = await sb.auth.getUser();
+  return result.data.user;  // null if not logged in
+}
 
-  function clearAccessToken() {
-    accessToken = null;
-    currentUser = null;
-    tokenExpiryTime = null;
-    localStorage.removeItem("x_refresh_token"); // Clear persistence
-    if (refreshTimer) {
-      clearTimeout(refreshTimer);
-      refreshTimer = null;
-    }
+// Update the #auth-area in the navbar based on whether the user is logged in
+async function updateNavbar() {
+  var authArea = getEl('auth-area');
+  if (!authArea) return;  // this page might not have a navbar
 
-    window.dispatchEvent(
-      new CustomEvent("xaytheon:authchange", {
-        detail: { user: null },
-      })
-    );
-  }
+  var user = await getCurrentUser();
 
-  function scheduleTokenRefresh() {
-    if (refreshTimer) clearTimeout(refreshTimer);
-    if (!tokenExpiryTime) return;
-    refreshTimer = setTimeout(refreshAccessToken, tokenExpiryTime - Date.now());
-  }
+  if (user) {
+    // --- User IS logged in: show their initial + a sign-out dropdown ---
+    var initial = getInitial(user.email);
 
-  async function refreshAccessToken() {
-    try {
-      const storedRefreshToken = localStorage.getItem("x_refresh_token");
-      const isFileProtocol = window.location.protocol === 'file:';
+    authArea.innerHTML =
+      '<div class="user-menu">' +
+        '<button id="user-btn" class="user-button" title="' + user.email + '">' +
+          initial +
+        '</button>' +
+        '<div id="user-dropdown" class="user-dropdown" hidden>' +
+          '<button id="signout-btn" class="dropdown-item">Sign out</button>' +
+        '</div>' +
+      '</div>';
 
-      let options = {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
-      };
-
-      if (storedRefreshToken) {
-        options.body = JSON.stringify({ refreshToken: storedRefreshToken });
-        // On file protocol, avoiding credentials helps avoid some CORS/cookie strictness
-        // On http/https, we can include them, but it's not strictly necessary if body has token
+    // Toggle the dropdown open/closed when the avatar button is clicked
+    getEl('user-btn').addEventListener('click', function() {
+      var dropdown = getEl('user-dropdown');
+      if (dropdown.hasAttribute('hidden')) {
+        dropdown.removeAttribute('hidden');   // show it
       } else {
-        options.credentials = "include"; // Try cookie
+        dropdown.setAttribute('hidden', '');  // hide it
       }
-
-      const res = await fetchWithTimeout(`${API_BASE_URL}/refresh`, options);
-
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.message || "Token refresh failed");
-      }
-
-      const data = await res.json();
-      setAccessToken(data.accessToken, data.expiresIn, data.user);
-
-      if (data.refreshToken) {
-        localStorage.setItem("x_refresh_token", data.refreshToken);
-      }
-
-      return true;
-    } catch (err) {
-      // console.warn("Session restore failed:", err);
-      clearAccessToken();
-      return false;
-    }
-  }
-
-  async function authenticatedFetch(url, options = {}) {
-    if (isTokenExpired()) {
-      const refreshed = await refreshAccessToken();
-      if (!refreshed) {
-        clearAccessToken();
-        throw { code: "SESSION_EXPIRED" };
-      }
-    }
-
-    const headers = {
-      ...(options.headers || {}),
-      Authorization: `Bearer ${getAccessToken()}`
-    };
-
-    const response = await fetchWithTimeout(url, {
-      ...options,
-      headers,
-      credentials: "include",
     });
 
-    if (response.status === 401) {
-      const data = await response.json();
-      if (data.expired) {
-        const refreshed = await refreshAccessToken();
-        if (refreshed) {
-          // Retry request with new token
-          headers.Authorization = `Bearer ${getAccessToken()}`;
-          return fetch(url, { ...options, headers, credentials: "include" });
-        }
+    // Close the dropdown if the user clicks anywhere else on the page
+    document.addEventListener('click', function(event) {
+      var dropdown = getEl('user-dropdown');
+      var btn = getEl('user-btn');
+      if (!dropdown || dropdown.hasAttribute('hidden')) return;
+
+      // Check if the click was inside the dropdown or button
+      var clickedInsideBtn = btn && btn.contains(event.target);
+      var clickedInsideDd  = dropdown && dropdown.contains(event.target);
+
+      if (!clickedInsideBtn && !clickedInsideDd) {
+        dropdown.setAttribute('hidden', '');  // close it
       }
-    }
+    });
 
-    return response;
-  }
+    // Sign out when the "Sign out" button is clicked
+    getEl('signout-btn').addEventListener('click', async function() {
+      await sb.auth.signOut();
+      await updateNavbar();          // re-render the navbar
+      showGatedContent(false);       // hide auth-only sections
+    });
 
-  function isAuthenticated() {
-    return accessToken !== null;
-  }
-
-  async function login(email, password) {
-    // Input validation
-    if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
-      throw new Error('Email and password are required');
-    }
-
-    if (!isValidEmail(email.trim())) {
-      throw new Error("Please enter a valid email address (e.g., user@gmail.com)");
-    }
-
-    if (!password || typeof password !== 'string') {
-      throw new Error("Password is required");
-    }
-
-
-    if (email.length > 254 || password.length > 128) {
-      throw new Error('Input data too long');
-    }
-
-    if (email.length < 3 || password.length < 8) {
-      throw new Error('Input data too short');
-    }
-
-    try {
-      const res = await fetchWithTimeout(`${API_BASE_URL}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email: email.trim(), password }),
-      });
-
-      if (!res.ok) {
-        let errorMessage = "Login failed";
-        try {
-          const err = await res.json();
-          errorMessage = err.message || errorMessage;
-        } catch {
-          errorMessage = res.statusText || errorMessage;
-        }
-        throw new Error(errorMessage);
-      }
-
-      const data = await res.json();
-
-      // Validate response data
-      if (!data.accessToken || !data.user) {
-        throw new Error('Invalid response from server');
-      }
-
-      setAccessToken(data.accessToken, data.expiresIn, data.user);
-
-      if (data.refreshToken) {
-        localStorage.setItem("x_refresh_token", data.refreshToken);
-      }
-
-      // Fetch preferences after login
-      await fetchPreferences();
-
-    } catch (err) {
-      if (err.message.includes('timeout')) {
-        throw new Error('Request timeout. Please check your connection.');
-      }
-      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-        throw new Error('Network error. Please check your connection.');
-      }
-      // Re-throw the original error if it's already user-friendly
-      throw err;
-    }
-  }
-
-  async function register(email, password) {
-    // Input validation
-    if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
-      throw new Error('Email and password are required');
-    }
-
-    if (email.length > 254 || password.length > 128) {
-      throw new Error('Input data too long');
-    }
-
-    if (email.length < 3 || password.length < 8) {
-      throw new Error('Input data too short');
-    }
-
-    try {
-      const res = await fetchWithTimeout(`${API_BASE_URL}/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), password }),
-      });
-
-      if (!res.ok) {
-        // 1. Handle specific HTTP status codes first
-        if (res.status === 409) throw { code: "USER_EXISTS" };
-        if (res.status === 429) throw { code: "TOO_MANY_ATTEMPTS" };
-        if (res.status >= 500) throw { code: "SERVER_ERROR" };
-
-        // 2. If it's not a predefined code, try to parse the server's error message
-        let errorMessage = "Registration failed";
-        try {
-          const err = await res.json();
-          errorMessage = err.message || errorMessage;
-        } catch {
-          // Fallback to status text (e.g., "Not Found") if JSON parsing fails
-          errorMessage = res.statusText || errorMessage;
-        }
-
-        throw new Error(errorMessage);
-      }
-
-      const data = await res.json();
-      return data;
-    } catch (err) {
-      if (err.message.includes('timeout')) {
-        throw new Error('Request timeout. Please check your connection.');
-      }
-      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-        throw new Error('Network error. Please check your connection.');
-      }
-      // Re-throw the original error if it's already user-friendly
-      throw err;
-    }
-  }
-
-  async function savePreferences(preferences) {
-    if (!accessToken) return; // Silent fail if not logged in
-    try {
-      // Use authenticatedFetch but point to /api/user/preferences
-      // Hacky URL replacement or just use full URL
-      const userUrl = API_BASE_URL.replace('/auth', '/user');
-      await authenticatedFetch(`${userUrl}/preferences`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(preferences),
-      });
-    } catch (err) {
-      console.warn("Failed to save preferences:", err);
-    }
-  }
-
-  async function fetchPreferences() {
-    if (!accessToken) return null;
-    try {
-      const userUrl = API_BASE_URL.replace('/auth', '/user');
-      const res = await authenticatedFetch(`${userUrl}/preferences`);
-      if (res.ok) {
-        const prefs = await res.json();
-        // Dispatch event or just return
-        return prefs;
-      }
-    } catch (err) {
-      console.warn("Failed to fetch preferences:", err);
-    }
-    return null;
-  }
-
-  async function logout() {
-    try {
-      await fetchWithTimeout(`${API_BASE_URL}/logout`, { method: "POST" });
-    } catch { }
-    clearAccessToken();
-    renderAuthArea();
-    applyAuthGating();
-    // Force reload to clear any private state
-    window.location.reload();
-  }
-
-  function getAccessToken() {
-    return accessToken;
-  }
-
-  function isAuthenticated() {
-    return !!accessToken;
-  }
-
-  // --- UI Helpers ---
-
-  async function restoreSession() {
-    if (localStorage.getItem("x_refresh_token")) {
-      try {
-        await refreshAccessToken();
-        // Also fetch prefs on restore
-        await fetchPreferences();
-      } catch (err) {
-        console.log("No existing session restored");
-      }
-    }
-  }
-
-  function renderAuthArea() {
-    const container = document.getElementById("auth-area");
-    if (!container) return;
-
-    if (!isAuthenticated()) {
-      if (lastAuthError) {
-        container.innerHTML = `
-           <div style="display:flex; align-items:center; gap:10px;">
-             <span style="color:#ef4444; font-size:11px; max-width:150px; line-height:1.2;">
-               ${lastAuthError}
-             </span>
-             <a class="btn btn-outline" href="login.html">Sign in</a>
-           </div>
-         `;
-      } else {
-        container.innerHTML = '<a class="btn btn-outline" href="login.html">Sign in</a>';
-      }
-      return;
-    }
-
-    container.innerHTML = `
-      <div class="user-menu">
-        <button class="user-button" id="user-button">
-          <span class="user-avatar">U</span>
-          <span class="chev">▾</span>
-        </button>
-        <div class="user-dropdown" id="user-dropdown" hidden>
-          <button class="dropdown-item" id="sign-out-btn">Sign out</button>
-        </div>
-      </div>
-    `;
-
-    const btn = document.getElementById("user-button");
-    const dd = document.getElementById("user-dropdown");
-    const signOutBtn = document.getElementById("sign-out-btn");
-
-    if (btn && dd && signOutBtn) {
-      btn.addEventListener("click", () => {
-        dd.toggleAttribute("hidden");
-      });
-      signOutBtn.addEventListener("click", logout);
-    }
-  }
-
-  function applyAuthGating() {
-    const authed = isAuthenticated();
-    document.querySelectorAll("[data-requires-auth]").forEach((el) => (el.style.display = authed ? "" : "none"));
-    document.querySelectorAll("[data-requires-guest]").forEach((el) => (el.style.display = authed ? "none" : ""));
-  }
-
-  // --- Public API ---
-
-  window.XAYTHEON_AUTH = {
-    getSession,
-    login,
-    register,
-    logout,
-    authenticatedFetch,
-    savePreferences,
-    fetchPreferences,
-    isAuthenticated,
-    getAccessToken
-  };
-
-  // --- Init ---
-
-  window.addEventListener("DOMContentLoaded", async () => {
-    // Check for tokens in URL (OAuth callback)
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlAccessToken = urlParams.get("accessToken");
-    const urlRefreshToken = urlParams.get("refreshToken");
-
-    if (urlAccessToken && urlRefreshToken) {
-      // Decode minimal user info if needed or just fetch user profile
-      // For now, we set the token. We might not have the full user object immediately available
-      // unless we decode the token or fetch /verify.
-      // Let's rely on restoreSession or a verify call to get the user details properly if missing.
-      // Or simply set what we have and let the app cycle refresh/fetch user.
-
-      localStorage.setItem("x_refresh_token", urlRefreshToken);
-      // Clean URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-
-      // We will let restoreSession pick it up from localStorage or trigger a refresh/verify immediately
-      // Actually, restoreSession uses the stored refresh token.
-    }
-
-    enforceHttps();
-    await restoreSession();
-    renderAuthArea();
-    applyAuthGating();
-  });
-
-  window.addEventListener("beforeunload", () => {
-    // Optional cleanup
-  });
-
-  // Attach additional methods (Forgot Password, etc.)
-
-  window.XAYTHEON_AUTH.forgotPassword = async function (email) {
-    // ... existing logic simplified for brevity or re-included if needed
-    // Assuming full overwrite, I'll include the original simplified
-    try {
-      const response = await fetch(`${API_BASE_URL}/forgot-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Failed to send reset email");
-      return data;
-    } catch (error) {
-      console.error("Forgot password error:", error);
-      throw error;
-    }
-  };
-
-  window.XAYTHEON_AUTH.resetPassword = async function (token, newPassword) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/reset-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, newPassword }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Failed to reset password");
-      return data;
-    } catch (error) {
-      console.error("Reset password error:", error);
-      throw error;
-    }
-  };
-
-  window.XAYTHEON_AUTH.validateResetToken = async function (token) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/validate-reset-token?token=${encodeURIComponent(token)}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
-      const data = await response.json();
-      if (!response.ok || !data.valid) throw new Error(data.message || "Invalid token");
-      return data;
-    } catch (error) {
-      console.error("Validate token error:", error);
-      throw error;
-    }
-  };
-
-})();
-
-function getAuthErrorMessage(error) {
-  if (!error) return "Something went wrong. Please try again.";
-  if (error.message === "Failed to fetch") return "Network error. Please check your internet connection.";
-  switch (error.code) {
-    case "INVALID_CREDENTIALS": return "Invalid email or password.";
-    case "USER_EXISTS": return "User already exists. Please log in.";
-    case "UNAUTHORIZED": return "You are not authorized. Please login again.";
-    case "SESSION_EXPIRED": return "Your session has expired. Please login again.";
-    default: return error.message || "Authentication failed.";
+  } else {
+    // --- User is NOT logged in: show a "Sign in" link ---
+    authArea.innerHTML = '<a class="btn btn-outline" href="login.html">Sign in</a>';
   }
 }
+
+// Show or hide page sections that require the user to be logged in.
+// Sections with the data-requires-auth attribute are hidden by default (see HTML).
+// This function shows them when logged in and hides them when logged out.
+function showGatedContent(isLoggedIn) {
+  var elements = document.querySelectorAll('[data-requires-auth]');
+
+  for (var i = 0; i < elements.length; i++) {
+    if (isLoggedIn) {
+      elements[i].style.display = '';     // show the element (uses its default display)
+    } else {
+      elements[i].style.display = 'none'; // hide it
+    }
+  }
+}
+
+// Send a magic link email to the user so they can log in (no password needed).
+// Called from login.html when the user submits their email.
+async function sendMagicLink(email) {
+  // After clicking the email link, redirect the user back to index.html
+  var redirectUrl = window.location.origin + '/index.html';
+
+  var result = await sb.auth.signInWithOtp({
+    email: email,
+    options: { emailRedirectTo: redirectUrl }
+  });
+
+  if (result.error) {
+    throw result.error;  // pass the error up to whoever called this function
+  }
+
+  return true;  // success
+}
+
+
+// ============================================================
+// EXPOSE FUNCTIONS TO OTHER SCRIPTS
+// ============================================================
+// login.html needs sendMagicLink.
+// contributions.js needs getCurrentUser.
+// We attach them to window.XAYTHEON_AUTH so any script can call them.
+window.XAYTHEON_AUTH = {
+  sendMagicLink: sendMagicLink,
+  getCurrentUser: getCurrentUser
+};
+
+
+// ============================================================
+// INITIALIZE WHEN THE PAGE IS READY
+// ============================================================
+window.addEventListener('DOMContentLoaded', async function() {
+
+  // Make sure the Supabase library loaded correctly
+  if (!window.supabase || !window.supabase.createClient) {
+    console.error('Supabase library not loaded. Check the <script> tag in your HTML.');
+    return;
+  }
+
+  // Connect to Supabase (like dialling a phone number to the server)
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // Make sb available to other scripts that might need it
+  window.sb = sb;
+
+  // Update the navbar right away
+  await updateNavbar();
+
+  // Show/hide auth-gated sections based on login state
+  var user = await getCurrentUser();
+  showGatedContent(user !== null);
+
+  // React automatically whenever the user logs in or out
+  sb.auth.onAuthStateChange(async function(event, session) {
+    await updateNavbar();
+    showGatedContent(session !== null);
+    // Tell other scripts (like contributions.js) that auth changed
+    window.dispatchEvent(new CustomEvent('xaytheon:authchange'));
+  });
+
+});
