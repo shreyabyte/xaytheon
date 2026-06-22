@@ -1430,3 +1430,74 @@ document.addEventListener('DOMContentLoaded', function() {
   initMiniViewer();
   injectCompareUI();
 });
+/* ==========================================
+   XAI OOD Validation Layer
+   Fix for Issue #1041
+========================================== */
+
+function isOutOfDistribution(input) {
+
+    if (input === null || input === undefined) {
+        return true;
+    }
+
+    if (typeof input !== "number") {
+        return true;
+    }
+
+    // Example training distribution bounds
+    if (input < 0 || input > 100) {
+        return true;
+    }
+
+    return false;
+}
+
+function generateExplanation(input) {
+
+    if (isOutOfDistribution(input)) {
+
+        return {
+            warning:
+                "⚠ Input outside training distribution. Explanation may be unreliable.",
+            confidence: "low"
+        };
+    }
+
+    return {
+        explanation: "Normal explanation generated.",
+        confidence: "high"
+    };
+}
+
+function runPrediction() {
+
+    // Test value
+    const input = 50; // <-- TEST VALUE
+
+    const result = generateExplanation(input);
+
+    const warningBox =
+        document.getElementById("xai-warning");
+
+    if (result.warning) {
+
+        console.warn(result.warning);
+
+        if (warningBox) {
+
+            warningBox.style.display = "block";
+
+            warningBox.innerText =
+                `${result.warning} (Confidence: ${result.confidence})`;
+        }
+
+    } else {
+
+        console.log(result.explanation);
+
+        if (warningBox) {
+            warningBox.style.display = "none";
+        }
+    }
+}
