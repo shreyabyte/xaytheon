@@ -1,3 +1,19 @@
+function safeHtml(str) {
+  return String(str)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function safeAttr(url) {
+  try {
+    return encodeURI(url);
+  } catch {
+    return "#";
+  }
+}
 // ============================================================
 // script.js - 3D Background + GitHub Dashboard
 // ============================================================
