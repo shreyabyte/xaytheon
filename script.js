@@ -599,7 +599,10 @@ function initGithubDashboard() {
       if (customRange) customRange.style.display = 'none';
       updateFilterBadge(null, null);
     }
-
+    var avatarEl = document.getElementById('gh-avatar');
+    if (avatarEl) {
+      avatarEl.removeAttribute('src');
+    }
     setGithubStatus('Dashboard cleared.');
   });
 }
