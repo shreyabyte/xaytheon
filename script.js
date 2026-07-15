@@ -519,7 +519,8 @@ function applyDateFilterAndRender() {
       ? filtered + ' / ' + total + ' events in range'
       : '';
   }
- 
+
+  
   renderRepos(filteredRepos.slice(0, 8));
   renderActivity(filteredEvents.slice(0, 10));
   showContributionsChart(
@@ -616,7 +617,11 @@ async function loadGithubDashboard(username) {
     if (avatarEl) avatarEl.src = user.avatar_url;
 
     setText('gh-name',      user.name  || '—');
-    setText('gh-login',     '@' + user.login);
+    document.getElementById("gh-login").innerHTML =
+    '@' + user.login +
+    '<button class="copy-btn" onclick="copyLink(\'' +
+    user.html_url +
+    '\')">📋</button>';
     setText('gh-bio',       user.bio   || '');
     setText('gh-followers', user.followers || 0);
     setText('gh-following', user.following || 0);
@@ -670,6 +675,15 @@ async function fetchFromGitHub(url) {
   return response.json();
 }
 
+async function copyLink(url) {
+  try {
+    await navigator.clipboard.writeText(url);
+    alert("Copied!");
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 function renderRepos(repos) {
   var list = document.getElementById('gh-repo-list');
   if (!list) return;
@@ -688,9 +702,16 @@ function renderRepos(repos) {
       ? '<span>' + safeHtml(repo.language) + '</span>' : '';
 
     html +=
-      '<div class="repo-item">' +
-        '<div class="repo-name"><a href="' + repo.html_url + '" target="_blank" rel="noopener">' +
-          safeHtml(repo.full_name) + '</a></div>' +
+    '<div class="repo-name">' +
+    '<a href="' + repo.html_url + '" target="_blank" rel="noopener">' +
+    safeHtml(repo.full_name) +
+    '</a>' +
+
+    '<button class="copy-btn" onclick="copyLink(\'' +
+    repo.html_url +
+    '\')">📋</button>' +
+    '</div>' +
+        
         description +
         '<div class="repo-meta">' +
           '<span>★ ' + (repo.stargazers_count || 0) + '</span>' +
@@ -779,6 +800,15 @@ function showContributionsChart(username, events) {
   chartImg.onload = function() {
     container.innerHTML = '';
     container.appendChild(chartImg);
+    var btn = document.createElement("button");
+    btn.innerHTML = "📋";
+    btn.className = "copy-btn";
+
+    btn.onclick = function () {
+        copyLink("https://github.com/users/" + username + "/contributions");
+    };
+
+    container.appendChild(btn);
     if (noteEl) noteEl.textContent = 'Full-year contribution chart.';
   };
 
