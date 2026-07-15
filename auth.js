@@ -144,9 +144,24 @@ async function sendMagicLink(email) {
 // login.html needs sendMagicLink.
 // contributions.js needs getCurrentUser.
 // We attach them to window.XAYTHEON_AUTH so any script can call them.
+
+async function login(email, password) {
+    const result = await sb.auth.signInWithPassword({
+        email: email,
+        password: password
+    });
+
+    if (result.error) {
+        throw result.error;
+    }
+
+    return result.data;
+}
+
 window.XAYTHEON_AUTH = {
   sendMagicLink: sendMagicLink,
-  getCurrentUser: getCurrentUser
+  getCurrentUser: getCurrentUser,
+  login: login
 };
 
 
