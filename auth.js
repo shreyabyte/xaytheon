@@ -137,6 +137,19 @@ async function sendMagicLink(email) {
   return true;  // success
 }
 
+// Login using email and password
+async function login(email, password) {
+  var result = await sb.auth.signInWithPassword({
+    email: email,
+    password: password
+  });
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  return result.data;
+}
 
 // ============================================================
 // EXPOSE FUNCTIONS TO OTHER SCRIPTS
@@ -163,7 +176,6 @@ window.XAYTHEON_AUTH = {
   getCurrentUser: getCurrentUser,
   login: login
 };
-
 
 // ============================================================
 // INITIALIZE WHEN THE PAGE IS READY

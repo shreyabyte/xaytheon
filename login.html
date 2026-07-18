@@ -530,7 +530,6 @@
       </div>
     </div>
   </div>
-
   <!-- Inline JS -->
   <script>
 document.addEventListener("DOMContentLoaded", function () {
@@ -569,6 +568,7 @@ document.addEventListener("DOMContentLoaded", function () {
 </script>
 
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script src="auth.js?v=1.0.0"></script>
   <script>
@@ -632,6 +632,17 @@ document.addEventListener("DOMContentLoaded", function () {
       statusEl.className = "success-msg";
       statusEl.textContent = message;
     }
+function getAuthErrorMessage(error) {
+  if (!error) {
+    return "Authentication failed.";
+  }
+
+  if (error.code === "INVALID_CREDENTIALS") {
+    return "Invalid email or password.";
+  }
+
+  return error.message || "Authentication failed.";
+}
 
     function setLoading(isLoading) {
       submitBtn.disabled = isLoading;
