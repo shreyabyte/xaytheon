@@ -138,18 +138,7 @@ async function sendMagicLink(email) {
 }
 
 // Login using email and password
-async function login(email, password) {
-  var result = await sb.auth.signInWithPassword({
-    email: email,
-    password: password
-  });
-
-  if (result.error) {
-    throw result.error;
-  }
-
-  return result.data;
-}
+// NOTE: `login` is defined later and exported; duplicate removed.
 
 // ============================================================
 // EXPOSE FUNCTIONS TO OTHER SCRIPTS
