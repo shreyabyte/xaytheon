@@ -137,8 +137,6 @@ async function sendMagicLink(email) {
   return true;  // success
 }
 
-// Login using email and password
-// NOTE: `login` is defined later and exported; duplicate removed.
 
 // ============================================================
 // EXPOSE FUNCTIONS TO OTHER SCRIPTS
